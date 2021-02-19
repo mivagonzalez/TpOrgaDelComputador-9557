@@ -7,28 +7,33 @@ extern 	fopen
 extern 	fclose
 extern 	puts
 extern  sscanf
+extern itoa
+extern atoi
 
 section .data
-    string                              db  '1234567891000000',0
+    string                              db  'a',0
 	msgIngresoOperando			        db	'Por favor ingrese el operando de 16 bits',10,0
     msgLeyendo	                        db	"leyendo Registro...",0
 	msgImprimirElemento			        db	'el numero ingresado es %s',10,0
+	msgImprimirElementoFinal			        db	'%c',0
 	msgImprimirResultadoParcial         db	'el resultado parcial es %i',10,0
+	msgImprimirResultadoPrueba         db	'----------------------------- %i',10,0
+	msgImprimirResultadoFinal           db	'el resultado final es %i',10,0
 	msgInputArchivoInvalido		        db	'el registro leido de archivo logicOperations.text es invalido',10,0
-	msgInputArchivoValido		        db	'el registro leido de archivo logicOperations.text es valido',10,0
+	msgInputArchivoValido		        db	'el registro leido de archivo logicOperations.text es valido, aplicando operacion...',10,0
 	msgInputInvalido			        db	'el numero ingresado es invalido',10,0
 	msgInputValido			            db	'el numero ingresado es valido',10,0
 	msgOperandoNum			            db	'el numero ingresado dspues de convertir es  %i',10,0
-	msgOperandoNumArchivo		        db	'operando %s operacion %s, aplicando...',10,0
+	msgOperandoNumArchivo		        db	'operando %s operacion %s, verificando...',10,0
 	msgOperandoNumConvertidoArchivo		db	'operando despues de ser convertido %i ',10,0
     msgAperturaOk                       db "Apertura archivo logicOperations.text ok",0
 	msgErrOpen		                    db  "Error en apertura de archivo logicOperations.txt",0
 
+    resultFormat      db  '%d',0
     operandoFormat  db  '%lli',0
     fileName		db	"logicOperations.txt",0 ;LA ULTIMA LINEA DEL ARCHIVO DEBE TERMINAR CON UN FIN DE LINEA (ENTER)!!!
 	mode			db	"r",0
     handleFile  	dq	0
-
     ; regOperanciones     times	0	db ''
 	;  secOperando        times	16 	db ' '
     ;  operacion          times 1   db ''
@@ -37,14 +42,17 @@ section .data
 
 	
 section .bss
-    inputTecladoValido  resb    50
-    inputArchivoValido  resb    50
-	buffer		        resb	17
-    resultadoParcial    resq    1
-    operandoNum         resq    1
-    operandoSecNum      resq    1
-    secOperando         resb    17
-    operacion           resb    2   
+    mascara  	                    resb	2
+    iteradorImprimirString  	    resb	1
+    resultado                       resb    17 
+    inputTecladoValido              resb    50
+    inputArchivoValido              resb    50
+	buffer		                    resb	17
+    resultadoParcial                resq    1
+    operandoNum                     resb    2
+    operandoSecNum                  resb    2
+    secOperando                     resb    17
+    operacion                       resb    2   
 
 section .text
 main:
@@ -86,7 +94,7 @@ ingresarOperando:
 	sub		rsp,32
 	call	printf						;Muestro encabezado del listado por pantalla
 	add		rsp,32 
-
+    
 leerRegsitro:
     mov     rcx,secOperando
     mov     rdx,17              
@@ -113,18 +121,6 @@ leerRegsitro:
     call    puts   
 	add		rsp,32
 
-	;Valido registro
-	call	validarRegistroArchivo
-    cmp		byte[inputArchivoValido],'N'
-    je		inputArchivoInvalido
-    
-    
-
-    mov     rcx, msgInputArchivoValido
-	sub		rsp,32
-	call	printf						;Muestro registro del archivo valido por pantalla
-	add		rsp,32
-
     mov     rcx, msgOperandoNumArchivo
     mov     rdx, secOperando
     mov     r8, operacion
@@ -132,6 +128,15 @@ leerRegsitro:
 	call	printf						;Muestro operacion y operando del archivo por pantalla
 	add		rsp,32
 
+	;Valido registro
+	call	validarRegistroArchivo
+    cmp		byte[inputArchivoValido],'N'
+    je		inputArchivoInvalido
+
+    mov     rcx, msgInputArchivoValido
+	sub		rsp,32
+	call	printf						;Muestro registro del archivo valido por pantalla
+	add		rsp,32
 
     call    aplicarOperacion
     mov     rcx,msgImprimirResultadoParcial
@@ -169,7 +174,36 @@ inputInvalido:
 	add		rsp,32    
     jmp     closeFiles
 transformarEnString:
-    ;----------------
+    mov rdi,1
+    mov rsi,0
+    ;----------------       0001  0010 0100 1000
+    mov rbx,[operandoNum]
+imprimirCaracter:
+    cmp rsi,16
+    je  closeFiles
+
+    mov r9, rbx
+    AND r9,rdi
+    cmp r9,0
+    je imprimir0
+
+imprimir1:
+    mov rcx,msgImprimirElementoFinal
+    mov rdx,'1'
+    sub rsp,32
+    call printf
+    add rsp,32
+    jmp siguienteBit
+imprimir0:
+    mov rcx,msgImprimirElementoFinal
+    mov rdx,'0'
+    sub rsp,32
+    call printf
+    add rsp,32
+siguienteBit:
+    inc rsi
+    imul rdi,2
+    jmp imprimirCaracter
 closeFiles:
     ;CIERRO archivo
     mov     rcx,[handleFile]
@@ -243,6 +277,8 @@ siguienteBitArchivo:
     jmp   siguienteBitArchivo
 
 valLongInputArchivo:
+
+
     cmp   r9,16
     jl    finValidarInputArchivo
     jg    finValidarInputArchivo
@@ -257,6 +293,7 @@ valOperacionArchivo:
     jmp   finValidarInputArchivo
 
 operacionArchivoOk:
+
     mov     rcx, secOperando 
     mov     rdx, operandoFormat
     mov     r8, operandoSecNum 
