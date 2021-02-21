@@ -11,44 +11,36 @@ extern itoa
 extern atoi
 
 section .data
-    string                              db  'a',0
 	msgIngresoOperando			        db	'Por favor ingrese el operando de 16 bits',10,0
     msgLeyendo	                        db	"leyendo Registro...",0
-	msgImprimirElemento			        db	'el numero ingresado es %s',10,0
-	msgImprimirElementoFinal			        db	'%c',0
-	msgImprimirResultadoParcial         db	'el resultado parcial es %i',10,0
-	msgImprimirResultadoPrueba         db	'----------------------------- %i',10,0
-	msgImprimirResultadoFinal           db	'el resultado final es %i',10,0
+	msgImprimirElementoFinal			db	'%c',0
+	msgImprimirResultadoParcial         db	'el resultado parcial es: ',10,0
+	msgImprimirSaltoDeLinea             db	10,'-------------------------',10,0
 	msgInputArchivoInvalido		        db	'el registro leido de archivo logicOperations.text es invalido',10,0
 	msgInputArchivoValido		        db	'el registro leido de archivo logicOperations.text es valido, aplicando operacion...',10,0
+	msgImprimirResultadoFinal			db	'el resultado final es: ',0
 	msgInputInvalido			        db	'el numero ingresado es invalido',10,0
 	msgInputValido			            db	'el numero ingresado es valido',10,0
-	msgOperandoNum			            db	'el numero ingresado dspues de convertir es  %i',10,0
 	msgOperandoNumArchivo		        db	'operando %s operacion %s, verificando...',10,0
-	msgOperandoNumConvertidoArchivo		db	'operando despues de ser convertido %i ',10,0
     msgAperturaOk                       db "Apertura archivo logicOperations.text ok",0
 	msgErrOpen		                    db  "Error en apertura de archivo logicOperations.txt",0
 
-    resultFormat      db  '%d',0
-    operandoFormat  db  '%lli',0
-    fileName		db	"logicOperations.txt",0 ;LA ULTIMA LINEA DEL ARCHIVO DEBE TERMINAR CON UN FIN DE LINEA (ENTER)!!!
-	mode			db	"r",0
-    handleFile  	dq	0
+    operandoFormat      db  '%lli',0
+    fileName		    db	"logicOperations.txt",0 
+	mode			    db	"r",0
+    handleFile  	    dq	0
     ; regOperanciones     times	0	db ''
-	;  secOperando        times	16 	db ' '
-    ;  operacion          times 1   db ''
+	;  secOperando        times	17 	db ' '
+    ;  operacion          times 2   db ''   No pude uasr esto porque cuando lo usaba en fgets no me estaba guardando bien los caracteres y no pude descubrir porque
 
 
 
 	
 section .bss
     mascara  	                    resb	2
-    iteradorImprimirString  	    resb	1
-    resultado                       resb    17 
     inputTecladoValido              resb    50
     inputArchivoValido              resb    50
 	buffer		                    resb	17
-    resultadoParcial                resq    1
     operandoNum                     resb    2
     operandoSecNum                  resb    2
     secOperando                     resb    17
@@ -76,12 +68,12 @@ abrirArchivo:
 	add		rsp,32
 
 ingresarOperando:    
-	mov		rcx,msgIngresoOperando		;Param 1: Direccion del mensaje a imprimir
+	mov		rcx,msgIngresoOperando		
 	sub		rsp,32
-	call	printf						;Muestro encabezado del listado por pantalla
+	call	printf						
 	add		rsp,32
 
-	mov		rcx,buffer					;Parametro 1: campo donde están los datos a leer
+	mov		rcx,buffer					
 	sub		rsp,32
 	call	gets
 	add		rsp,32
@@ -90,9 +82,9 @@ ingresarOperando:
     cmp byte[inputTecladoValido],'N'
     je  inputInvalido    
     
-    mov		rcx,msgInputValido		;Param 1: Direccion del mensaje a imprimir
+    mov		rcx,msgInputValido		
 	sub		rsp,32
-	call	printf						;Muestro encabezado del listado por pantalla
+	call	printf						
 	add		rsp,32 
     
 leerRegsitro:
@@ -100,11 +92,11 @@ leerRegsitro:
     mov     rdx,17              
     mov     r8,[handleFile]  
    	sub		rsp,32
-    call    fgets               ;PREGUNTAR PORQUE NO FUNCIONA SOLO LEYENDO TODO EN UN REGISTRO Y TENGO QUE HACER DOS FGETS
+    call    fgets               
     add		rsp,32
     
     cmp     rax,0
-    jle     transformarEnString
+    jle     imprimirResultado
     
     mov     rcx,operacion
     mov     rdx,2
@@ -114,7 +106,7 @@ leerRegsitro:
     add		rsp,32
 
     cmp     rax,0
-    jle     transformarEnString
+    jle     imprimirResultado
 
     mov     rcx,msgLeyendo
     sub		rsp,32
@@ -125,7 +117,7 @@ leerRegsitro:
     mov     rdx, secOperando
     mov     r8, operacion
 	sub		rsp,32
-	call	printf						;Muestro operacion y operando del archivo por pantalla
+	call	printf						
 	add		rsp,32
 
 	;Valido registro
@@ -135,7 +127,7 @@ leerRegsitro:
 
     mov     rcx, msgInputArchivoValido
 	sub		rsp,32
-	call	printf						;Muestro registro del archivo valido por pantalla
+	call	printf						
 	add		rsp,32
 
     call    aplicarOperacion
@@ -145,13 +137,15 @@ leerRegsitro:
     call    printf
     add     rsp,32
 
+    call    transformarEnString
+
     jmp     leerRegsitro
 
 
 inputArchivoInvalido:
-    mov		rcx,msgInputArchivoInvalido		;Param 1: Direccion del mensaje a imprimir
+    mov		rcx,msgInputArchivoInvalido		
 	sub		rsp,32
-	call	printf						;Muestro encabezado del listado por pantalla
+	call	printf						
 	add		rsp,32    
     jmp     leerRegsitro
 
@@ -163,47 +157,22 @@ errorOpen:
 	;Cierro archivo Listado
 	mov		rcx,[handleFile]  
     sub		rsp,32
-	call	fclose							;CIERRO archivo
-	add		rsp,32              	;Parametro 1: handleFile del archivo
+	call	fclose							
+	add		rsp,32              	
 	jmp		fin
 
 inputInvalido:
-    mov		rcx,msgInputInvalido		;Param 1: Direccion del mensaje a imprimir
+    mov		rcx,msgInputInvalido		
 	sub		rsp,32
-	call	printf						;Muestro encabezado del listado por pantalla
+	call	printf						
 	add		rsp,32    
     jmp     closeFiles
-transformarEnString:
-    mov rdi,1
-    mov rsi,0
-    ;----------------       0001  0010 0100 1000
-    mov rbx,[operandoNum]
-imprimirCaracter:
-    cmp rsi,16
-    je  closeFiles
-
-    mov r9, rbx
-    AND r9,rdi
-    cmp r9,0
-    je imprimir0
-
-imprimir1:
-    mov rcx,msgImprimirElementoFinal
-    mov rdx,'1'
-    sub rsp,32
-    call printf
-    add rsp,32
-    jmp siguienteBit
-imprimir0:
-    mov rcx,msgImprimirElementoFinal
-    mov rdx,'0'
-    sub rsp,32
-    call printf
-    add rsp,32
-siguienteBit:
-    inc rsi
-    imul rdi,2
-    jmp imprimirCaracter
+imprimirResultado:
+    mov		rcx,msgImprimirResultadoFinal		
+	sub		rsp,32
+	call	printf						
+	add		rsp,32  
+    call transformarEnString
 closeFiles:
     ;CIERRO archivo
     mov     rcx,[handleFile]
@@ -242,9 +211,9 @@ valLongInput:
     cmp   r9,16
     jl    finValidarInput
     jg    finValidarInput
-valFisOk:           ;and;'0000 0000 0000 0000 0001'
+valFisOk:           
     
-    mov     rcx, buffer ;'1001 0001 1110 0001 1111' dividir por 2 para eliminar este bit, luego sumarle 30 a la mascara e ir guardando en string de 16 bytes
+    mov     rcx, buffer 
     mov     rdx, operandoFormat
     mov     r8, operandoNum
 	call	sscanf
@@ -340,3 +309,42 @@ finAplicarOperacion:
     mov [operandoNum],rbx
 ret
 	
+transformarEnString:
+    ; utilizo una mascara que voy multiplicando por 2 para correr el 1 a la izquierda. Me fijo si numero resultante es 0 o distinto de 0
+    ; si es distinto de 0 quiere decir que en ese bit hay un uno entonce imprimo un uno, sino imprimo 0
+    mov rdi,1
+    mov rsi,0
+    
+    mov rbx,[operandoNum]
+imprimirCaracter:
+    cmp rsi,16
+    je  finTransformarEnString
+
+    mov r9, rbx
+    AND r9,rdi
+    cmp r9,0
+    je imprimir0
+
+imprimir1:
+    mov rcx,msgImprimirElementoFinal
+    mov rdx,'1'
+    sub rsp,32
+    call printf
+    add rsp,32
+    jmp siguienteBit
+imprimir0:
+    mov rcx,msgImprimirElementoFinal
+    mov rdx,'0'
+    sub rsp,32
+    call printf
+    add rsp,32
+siguienteBit:
+    inc rsi
+    imul rdi,2
+    jmp imprimirCaracter
+finTransformarEnString:
+    mov rcx,msgImprimirSaltoDeLinea
+    sub rsp,32
+    call printf
+    add rsp,32
+ret
