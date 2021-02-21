@@ -1,4 +1,9 @@
-;EJEMPLO CLASE
+; Tengo un bug en el trabjao que me impidio terminarlo al 100% y no pude encontrar porque, consulte en el campus y envie mails pero no obtuve respuesta. El problema esta entre la conversion a binario punto fijo hecha con
+; sscanf y la conversion de nuevo a string con mi rutina transformarAString
+; Basicamente sscanf me esta transformando el string en un binario punto fijo con signo, el cual si transformo luego a string no se transforma en el numero con 0s y 1s que deberia. Revise mi funcion de transformacion y deberia
+; estar andando bien asique estoy practicamewnte seguro que no se encuentra alli el problema. Luego las operaciones tambien las estoy realizando bien, asique lo unico que se me ocurre es que sscanf no me este devolviendo bien el 
+; binario.
+; Intente de todas las formas resolverlo pero no pude encontrar donde se esta orignando este.
 global 	main
 extern 	printf
 extern 	gets
@@ -31,7 +36,8 @@ section .data
     handleFile  	    dq	0
     ; regOperanciones     times	0	db ''
 	;  secOperando        times	17 	db ' '
-    ;  operacion          times 2   db ''   No pude uasr esto porque cuando lo usaba en fgets no me estaba guardando bien los caracteres y no pude descubrir porque
+    ;  operacion          times 2   db ''   No pude usar esto porque cuando lo usaba en fgets no me estaba guardando bien los caracteres , me guardaba el operando y la operacion, en secOperando y la operacion en operacion
+    ;                                       Es decir la operacion la estaba guardando dos veces. Decidi hacer 2 fgets por separado.
 
 
 
