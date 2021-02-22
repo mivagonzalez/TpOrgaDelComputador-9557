@@ -20,13 +20,13 @@ section .data
 	msgImprimirOperandoTransfEnBin      db	'--- OPERANDO TRANSFORMADO EN BINARIO : %i ',10,0
 	msgImprimirOperandoDOS              db	'--- STRING DEL OPERANDO 2 : %s ',10,0
     msgLeyendo	                        db	"leyendo Registro...",0
-	msgImprimirResultadoParcial         db	'el resultado parcial es: %s',10,0
-	msgImprimirResultadoFinal			db	'el resultado final es: %s',10,0
-	msgImprimirSaltoDeLinea             db	10,'-------------------------',10,0
-	msgInputArchivoInvalido		        db	'el registro leido de archivo logicOperations.text es invalido',10,0
-	msgInputArchivoValido		        db	'el registro leido de archivo logicOperations.text es valido, aplicando operacion...',10,0
-	msgInputInvalido			        db	'el numero ingresado es invalido',10,0
-	msgInputValido			            db	'el numero ingresado es valido',10,0
+	msgImprimirResultadoParcial         db	'El resultado parcial es: %s',10,0
+	msgImprimirResultadoFinal			db	'El resultado final es: %s',10,0
+	msgImprimirSaltoDeLinea             db	'-----------------------------------------',10,0
+	msgInputArchivoInvalido		        db	'El registro leido de archivo logicOperations.text es invalido',10,0
+	msgInputArchivoValido		        db	'El registro leido de archivo logicOperations.text es valido, aplicando operacion...',10,0
+	msgInputInvalido			        db	'El numero ingresado es invalido',10,0
+	msgInputValido			            db	'El numero ingresado es valido',10,0
 	msgOperandoNumArchivo		        db	'operando %s operacion %s, verificando...',10,0
     msgAperturaOk                       db "Apertura archivo logicOperations.text ok",0
 	msgErrOpen		                    db  "Error en apertura de archivo logicOperations.txt",0
@@ -156,6 +156,11 @@ leerRegsitro:
 
     call    transformarEnString
 
+    mov		rcx,msgImprimirResultadoParcial		
+    mov		rdx,stringResultadoFinal	
+	sub		rsp,32
+	call	printf						
+	add		rsp,32
     jmp     leerRegsitro
 
 
@@ -185,11 +190,19 @@ inputInvalido:
 	add		rsp,32    
     jmp     closeFiles
 imprimirResultado:
-    mov		rcx,msgImprimirResultadoFinal		
+    call transformarEnString
+
+    mov		rcx,msgImprimirSaltoDeLinea		
 	sub		rsp,32
 	call	printf						
-	add		rsp,32  
-    call transformarEnString
+	add		rsp,32
+
+    mov		rcx,msgImprimirResultadoFinal		
+    mov		rdx,stringResultadoFinal	
+	sub		rsp,32
+	call	printf						
+	add		rsp,32
+
 closeFiles:
     ;CIERRO archivo
     mov     rcx,[handleFile]
@@ -206,7 +219,7 @@ fin:
 ; ;------------------------------------------------------------
 
 validarOperandoInput:
-;------------------------------------------------------------	
+
     mov   byte[inputTecladoValido],'N'
     mov   rsi,0
     mov   r9,0
@@ -234,8 +247,9 @@ finValidarInput:
 
 ret
 
+; --------------------------------------------------------------
 validarRegistroArchivo:
-;------------------------------------------------------------	
+
     mov   byte[inputArchivoValido],'N'
     mov   rsi,0
     mov   r9,0
@@ -275,6 +289,7 @@ finValidarInputArchivo:
 
 ret
 
+; --------------------------------------------------------------
 
 aplicarOperacion:
     cmp   byte[operacionNueva],'O'
@@ -288,27 +303,20 @@ aplicarOperacion:
 
 operacionAnd:
 
-    mov		rcx,msgEfectuandoAnd		
-	sub		rsp,32
-	call	printf						
-	add		rsp,32
-
     mov rcx,[operandoSecNum]
     mov rbx,[operandoNum]
     AND rbx,rcx
     jmp finAplicarOperacion
+
 operacionXor:
+
     mov rcx,[operandoSecNum]
     mov rbx,[operandoNum]
     XOR rbx,rcx
-    
     jmp finAplicarOperacion
 
 operacionOr:
-    mov		rcx,msgEfectuandoOR		
-	sub		rsp,32
-	call	printf						
-	add		rsp,32
+
     mov rcx,[operandoSecNum]
     mov rbx,[operandoNum]
     OR rbx,rcx
@@ -318,9 +326,10 @@ finAplicarOperacion:
 
 ret
 	
+; --------------------------------------------------------------
 transformarEnString:
 
-    mov byte[stringResultadoFinal+16],0
+    mov byte[stringResultadoFinal + 16],0
     ; utilizo una mascara que voy multiplicando por 2 para correr el 1 a la izquierda. Me fijo si numero resultante es 0 o distinto de 0
     ; si es distinto de 0 quiere decir que en ese bit hay un uno entonce imprimo un uno, sino imprimo 0
 
@@ -351,13 +360,9 @@ siguienteBit:
     jmp imprimirCaracter
 
 finTransformarEnString:
-    mov		rcx,msgImprimirResultadoParcial		
-    mov		rdx,stringResultadoFinal	
-	sub		rsp,32
-	call	printf						
-	add		rsp,32
-ret
 
+ret
+; --------------------------------------------------------------
 transformarOperando1EnBinario:
 
     mov qword[operandoNum],0
