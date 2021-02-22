@@ -11,12 +11,11 @@ extern 	fgets
 extern 	fopen
 extern 	fclose
 extern 	puts
-extern  sscanf
-extern itoa
-extern atoi
 
 section .data
 	msgIngresoOperando			        db	'Por favor ingrese el operando de 16 bits',10,0
+	msgImprimirOperandoTransfEnBin      db	'--- OPERANDO TRANSFORMADO EN BINARIO : %i ',10,0
+	msgImprimirOperandoDOS              db	'--- STRING DEL OPERANDO 2 : %s ',10,0
     msgLeyendo	                        db	"leyendo Registro...",0
 	msgImprimirElementoFinal			db	'%c',0
 	msgImprimirResultadoParcial         db	'el resultado parcial es: ',10,0
@@ -43,13 +42,13 @@ section .data
 
 	
 section .bss
+    secOperando                     resb    17
     mascara  	                    resb	2
+    operandoSecNum                  resb    2
     inputTecladoValido              resb    50
     inputArchivoValido              resb    50
 	buffer		                    resb	17
     operandoNum                     resb    2
-    operandoSecNum                  resb    2
-    secOperando                     resb    17
     operacion                       resb    2   
 
 section .text
@@ -87,12 +86,14 @@ ingresarOperando:
 	call validarOperandoInput
     cmp byte[inputTecladoValido],'N'
     je  inputInvalido    
-    
+    call transformarOperando1EnBinario
+
     mov		rcx,msgInputValido		
 	sub		rsp,32
 	call	printf						
 	add		rsp,32 
     
+    push qword[operandoNum]
 leerRegsitro:
     mov     rcx,secOperando
     mov     rdx,17              
@@ -126,15 +127,22 @@ leerRegsitro:
 	call	printf						
 	add		rsp,32
 
+
 	;Valido registro
 	call	validarRegistroArchivo
+  
     cmp		byte[inputArchivoValido],'N'
     je		inputArchivoInvalido
-
+  
     mov     rcx, msgInputArchivoValido
 	sub		rsp,32
 	call	printf						
 	add		rsp,32
+
+
+    call transformarOperando2EnBinario
+
+    pop qword[operandoNum]
 
     call    aplicarOperacion
     mov     rcx,msgImprimirResultadoParcial
@@ -218,15 +226,6 @@ valLongInput:
     jl    finValidarInput
     jg    finValidarInput
 valFisOk:           
-    
-    mov     rcx, buffer 
-    mov     rdx, operandoFormat
-    mov     r8, operandoNum
-	call	sscanf
-
-
-    cmp     rax,1
-    jl      finValidarInput
     mov   byte[inputTecladoValido],'S'
 finValidarInput:
 
@@ -268,16 +267,6 @@ valOperacionArchivo:
     jmp   finValidarInputArchivo
 
 operacionArchivoOk:
-
-    mov     rcx, secOperando 
-    mov     rdx, operandoFormat
-    mov     r8, operandoSecNum 
-	sub		rsp,32
-	call	sscanf
-	add		rsp,32 
-    cmp     rax,1
-    jl      finValidarInputArchivo
-
     mov   byte[inputArchivoValido],'S'
 finValidarInputArchivo:
 
@@ -285,11 +274,11 @@ ret
 
 
 aplicarOperacion:
-
     cmp   byte[operacion],'O'
     je    operacionOr 
 
     cmp   byte[operacion],'N'
+ 
     je    operacionAnd       
 
     cmp   byte[operacion],'X'
@@ -299,6 +288,18 @@ operacionAnd:
     mov rcx,[operandoSecNum]
     mov rbx,[operandoNum]
     AND rbx,rcx
+    ;--------------------------------
+   mov		rcx,msgImprimirOperandoTransfEnBin		
+	mov		rdx,[operandoSecNum]		
+	sub		rsp,32
+	call	printf						
+	add		rsp,32
+    mov		rcx,msgImprimirOperandoTransfEnBin		
+	mov		rdx,[operandoNum]		
+	sub		rsp,32
+	call	printf						
+	add		rsp,32
+    ;-------------------------------
     jmp finAplicarOperacion
 operacionXor:
     mov rcx,[operandoSecNum]
@@ -353,4 +354,53 @@ finTransformarEnString:
     sub rsp,32
     call printf
     add rsp,32
+ret
+
+transformarOperando1EnBinario:
+
+    mov qword[operandoNum],0
+    mov rsi,1
+    mov rbx,15
+validarBitEnBuffer:    
+    cmp rbx,0
+    jl  finTransformarOp1EnBinario
+    cmp byte[buffer+rbx],'1'
+    je  escribirBit1EnOp1
+    jmp siguienteBitOp1
+
+escribirBit1EnOp1:
+
+    or qword[operandoNum],rsi
+
+siguienteBitOp1:
+
+    imul rsi,2
+    dec  rbx
+    jmp validarBitEnBuffer
+
+finTransformarOp1EnBinario:
+ret
+
+
+transformarOperando2EnBinario:
+    mov qword[operandoSecNum],0
+    mov rdi,1
+    mov rsi,15
+validarBitEnSecOperando:    
+    cmp rsi,0
+    jl  finTransformarOp2EnBinario
+    cmp byte[secOperando+rsi],'1'
+    je  escribirBit1EnOp2
+    jmp siguienteBitOp2
+
+escribirBit1EnOp2:
+    or qword[operandoSecNum],rdi
+
+siguienteBitOp2:
+
+    imul rdi,2
+    dec  rsi
+    jmp validarBitEnSecOperando
+
+finTransformarOp2EnBinario:
 ret
