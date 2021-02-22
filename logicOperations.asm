@@ -85,8 +85,9 @@ ingresarOperando:
 	call	printf						
 	add		rsp,32 
     
-    push qword[operandoNum]
 leerRegsitro:
+    push qword[operandoNum]
+
     mov     rcx,secOperando
     mov     rdx,17              
     mov     r8,[handleFile]  
@@ -148,6 +149,7 @@ leerRegsitro:
 	sub		rsp,32
 	call	printf						
 	add		rsp,32
+    
     jmp     leerRegsitro
 
 
@@ -197,6 +199,7 @@ closeFiles:
 	add		rsp,32
 
 fin:
+    pop qword[operandoNum]
     add  rsp,28h
     ret
 
@@ -345,7 +348,7 @@ siguienteBit:
     jmp imprimirCaracter
 
 finTransformarEnString:
-
+    
 ret
 ; --------------------------------------------------------------
 transformarOperando1EnBinario:
