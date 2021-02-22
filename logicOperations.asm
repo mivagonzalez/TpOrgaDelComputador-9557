@@ -13,16 +13,18 @@ extern 	fclose
 extern 	puts
 
 section .data
+	msgEfectuandoAnd			        db	'--EFECTUANDO AND--',10,0
+	msgEfectuandoOR			        db	'--EFECTUANDO OR--',10,0
+	msgEfectuandoXor			        db	'--EFECTUANDO XOR--',10,0
 	msgIngresoOperando			        db	'Por favor ingrese el operando de 16 bits',10,0
 	msgImprimirOperandoTransfEnBin      db	'--- OPERANDO TRANSFORMADO EN BINARIO : %i ',10,0
 	msgImprimirOperandoDOS              db	'--- STRING DEL OPERANDO 2 : %s ',10,0
     msgLeyendo	                        db	"leyendo Registro...",0
-	msgImprimirElementoFinal			db	'%c',0
-	msgImprimirResultadoParcial         db	'el resultado parcial es: ',10,0
+	msgImprimirResultadoParcial         db	'el resultado parcial es: %s',10,0
+	msgImprimirResultadoFinal			db	'el resultado final es: %s',10,0
 	msgImprimirSaltoDeLinea             db	10,'-------------------------',10,0
 	msgInputArchivoInvalido		        db	'el registro leido de archivo logicOperations.text es invalido',10,0
 	msgInputArchivoValido		        db	'el registro leido de archivo logicOperations.text es valido, aplicando operacion...',10,0
-	msgImprimirResultadoFinal			db	'el resultado final es: ',0
 	msgInputInvalido			        db	'el numero ingresado es invalido',10,0
 	msgInputValido			            db	'el numero ingresado es valido',10,0
 	msgOperandoNumArchivo		        db	'operando %s operacion %s, verificando...',10,0
@@ -42,6 +44,8 @@ section .data
 
 	
 section .bss
+    stringResultadoFinal            resb    17
+    operacionNueva                  resb    2
     secOperando                     resb    17
     mascara  	                    resb	2
     operandoSecNum                  resb    2
@@ -112,8 +116,14 @@ leerRegsitro:
     call    fgets
     add		rsp,32
 
+
     cmp     rax,0
     jle     imprimirResultado
+
+    mov rcx,1
+    mov rsi,operacion
+    mov rdi,operacionNueva
+    rep movsb
 
     mov     rcx,msgLeyendo
     sub		rsp,32
@@ -127,7 +137,6 @@ leerRegsitro:
 	call	printf						
 	add		rsp,32
 
-
 	;Valido registro
 	call	validarRegistroArchivo
   
@@ -139,17 +148,11 @@ leerRegsitro:
 	call	printf						
 	add		rsp,32
 
-
     call transformarOperando2EnBinario
 
     pop qword[operandoNum]
 
     call    aplicarOperacion
-    mov     rcx,msgImprimirResultadoParcial
-    mov     rdx,[operandoNum]
-    sub     rsp,32
-    call    printf
-    add     rsp,32
 
     call    transformarEnString
 
@@ -274,86 +277,85 @@ ret
 
 
 aplicarOperacion:
-    cmp   byte[operacion],'O'
+    cmp   byte[operacionNueva],'O'
     je    operacionOr 
 
-    cmp   byte[operacion],'N'
- 
+    cmp   byte[operacionNueva],'N'
     je    operacionAnd       
 
-    cmp   byte[operacion],'X'
+    cmp   byte[operacionNueva],'X'
     je    operacionXor
 
 operacionAnd:
+
+    mov		rcx,msgEfectuandoAnd		
+	sub		rsp,32
+	call	printf						
+	add		rsp,32
+
     mov rcx,[operandoSecNum]
     mov rbx,[operandoNum]
     AND rbx,rcx
-    ;--------------------------------
-   mov		rcx,msgImprimirOperandoTransfEnBin		
-	mov		rdx,[operandoSecNum]		
-	sub		rsp,32
-	call	printf						
-	add		rsp,32
-    mov		rcx,msgImprimirOperandoTransfEnBin		
-	mov		rdx,[operandoNum]		
-	sub		rsp,32
-	call	printf						
-	add		rsp,32
-    ;-------------------------------
     jmp finAplicarOperacion
 operacionXor:
     mov rcx,[operandoSecNum]
     mov rbx,[operandoNum]
     XOR rbx,rcx
+    
     jmp finAplicarOperacion
 
 operacionOr:
+    mov		rcx,msgEfectuandoOR		
+	sub		rsp,32
+	call	printf						
+	add		rsp,32
     mov rcx,[operandoSecNum]
     mov rbx,[operandoNum]
     OR rbx,rcx
 
 finAplicarOperacion:
     mov [operandoNum],rbx
+
 ret
 	
 transformarEnString:
+
+    mov byte[stringResultadoFinal+16],0
     ; utilizo una mascara que voy multiplicando por 2 para correr el 1 a la izquierda. Me fijo si numero resultante es 0 o distinto de 0
     ; si es distinto de 0 quiere decir que en ese bit hay un uno entonce imprimo un uno, sino imprimo 0
+
     mov rdi,1
-    mov rsi,0
+    
+    mov rsi,15
     
     mov rbx,[operandoNum]
+    
 imprimirCaracter:
-    cmp rsi,16
-    je  finTransformarEnString
+    cmp rsi,0
+    jl  finTransformarEnString
 
     mov r9, rbx
     AND r9,rdi
+
     cmp r9,0
     je imprimir0
 
 imprimir1:
-    mov rcx,msgImprimirElementoFinal
-    mov rdx,'1'
-    sub rsp,32
-    call printf
-    add rsp,32
+    mov byte[stringResultadoFinal + rsi],'1'
     jmp siguienteBit
 imprimir0:
-    mov rcx,msgImprimirElementoFinal
-    mov rdx,'0'
-    sub rsp,32
-    call printf
-    add rsp,32
+    mov byte[stringResultadoFinal + rsi],'0'
 siguienteBit:
-    inc rsi
+    dec rsi
     imul rdi,2
     jmp imprimirCaracter
+
 finTransformarEnString:
-    mov rcx,msgImprimirSaltoDeLinea
-    sub rsp,32
-    call printf
-    add rsp,32
+    mov		rcx,msgImprimirResultadoParcial		
+    mov		rdx,stringResultadoFinal	
+	sub		rsp,32
+	call	printf						
+	add		rsp,32
 ret
 
 transformarOperando1EnBinario:
