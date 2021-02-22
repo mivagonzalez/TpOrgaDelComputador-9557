@@ -1,9 +1,3 @@
-; Tengo un bug en el trabjao que me impidio terminarlo al 100% y no pude encontrar porque, consulte en el campus y envie mails pero no obtuve respuesta. El problema esta entre la conversion a binario punto fijo hecha con
-; sscanf y la conversion de nuevo a string con mi rutina transformarAString
-; Basicamente sscanf me esta transformando el string en un binario punto fijo con signo, el cual si transformo luego a string no se transforma en el numero con 0s y 1s que deberia. Revise mi funcion de transformacion y deberia
-; estar andando bien asique estoy practicamewnte seguro que no se encuentra alli el problema. Luego las operaciones tambien las estoy realizando bien, asique lo unico que se me ocurre es que sscanf no me este devolviendo bien el 
-; binario.
-; Intente de todas las formas resolverlo pero no pude encontrar donde se esta orignando este.
 global 	main
 extern 	printf
 extern 	gets
@@ -13,12 +7,7 @@ extern 	fclose
 extern 	puts
 
 section .data
-	msgEfectuandoAnd			        db	'--EFECTUANDO AND--',10,0
-	msgEfectuandoOR			        db	'--EFECTUANDO OR--',10,0
-	msgEfectuandoXor			        db	'--EFECTUANDO XOR--',10,0
 	msgIngresoOperando			        db	'Por favor ingrese el operando de 16 bits',10,0
-	msgImprimirOperandoTransfEnBin      db	'--- OPERANDO TRANSFORMADO EN BINARIO : %i ',10,0
-	msgImprimirOperandoDOS              db	'--- STRING DEL OPERANDO 2 : %s ',10,0
     msgLeyendo	                        db	"leyendo Registro...",0
 	msgImprimirResultadoParcial         db	'El resultado parcial es: %s',10,0
 	msgImprimirResultadoFinal			db	'El resultado final es: %s',10,0
@@ -47,7 +36,6 @@ section .bss
     stringResultadoFinal            resb    17
     operacionNueva                  resb    2
     secOperando                     resb    17
-    mascara  	                    resb	2
     operandoSecNum                  resb    2
     inputTecladoValido              resb    50
     inputArchivoValido              resb    50
@@ -61,8 +49,8 @@ main:
 	sub  rsp,28h
 
 abrirArchivo:
-    mov		rcx,fileName ;RCX
-    mov     rdx,mode ;RDX
+    mov		rcx,fileName 
+    mov     rdx,mode
     sub     rsp,32
     call	fopen
     add     rsp,32
@@ -137,7 +125,6 @@ leerRegsitro:
 	call	printf						
 	add		rsp,32
 
-	;Valido registro
 	call	validarRegistroArchivo
   
     cmp		byte[inputArchivoValido],'N'
@@ -176,7 +163,7 @@ errorOpen:
     sub		rsp,32
     call    puts
 	add		rsp,32
-	;Cierro archivo Listado
+
 	mov		rcx,[handleFile]  
     sub		rsp,32
 	call	fclose							
@@ -204,7 +191,6 @@ imprimirResultado:
 	add		rsp,32
 
 closeFiles:
-    ;CIERRO archivo
     mov     rcx,[handleFile]
     sub		rsp,32
     call    fclose
@@ -330,8 +316,7 @@ ret
 transformarEnString:
 
     mov byte[stringResultadoFinal + 16],0
-    ; utilizo una mascara que voy multiplicando por 2 para correr el 1 a la izquierda. Me fijo si numero resultante es 0 o distinto de 0
-    ; si es distinto de 0 quiere decir que en ese bit hay un uno entonce imprimo un uno, sino imprimo 0
+    ; utilizo una mascara que voy multiplicando por 2 para correr el 1 a la izquierda. Me fijo si en ese bit hay un 0 o no. SI hay cero escribo un 0 en mi string , sino un 1
 
     mov rdi,1
     
